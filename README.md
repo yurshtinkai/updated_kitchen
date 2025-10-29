@@ -1,168 +1,196 @@
 # FoodHub - Professional Food & Beverage Ordering System
 
-A modern, responsive food ordering system built with React and Tailwind CSS.
+A modern, responsive food ordering system with a comprehensive admin panel, built with React frontend and Node.js/Express/TypeScript backend.
 
-## Features
+## ✨ Features
 
-### 🍽️ Menu Management
-- **Category Filtering**: Browse items by categories (Appetizers, Main Courses, Desserts, Beverages)
-- **Rich Item Display**: Each menu item includes emoji icons, descriptions, and pricing
-- **Responsive Grid**: Beautiful grid layout that adapts to different screen sizes
+### Frontend (React)
+- 🍽️ Menu Management - Category filtering, rich item display
+- 🛒 Shopping Cart - Add/remove items, real-time updates
+- 📋 Order Processing - Customer details, special instructions
+- 🎨 Professional Design - Tailwind CSS, responsive layout
 
-### 🛒 Shopping Cart
-- **Add/Remove Items**: Easy item management with quantity controls
-- **Real-time Updates**: Cart updates instantly when items are added or removed
-- **Price Calculation**: Automatic total calculation with item quantities
-- **Persistent State**: Cart maintains state throughout the session
+### Backend (Node.js + Express + TypeScript)
+- 🔐 JWT Authentication - Secure admin login
+- 💾 MySQL Database - Sequelize ORM
+- 📊 Sales Reports - Charts and analytics
+- 📦 Orders Management - CRUD operations
+- 📋 Inventory Management - Stock tracking
+- 🚀 RESTful API - Well-organized endpoints
 
-### 📋 Order Processing
-- **Customer Information**: Collect customer details including name, email, phone, and address
-- **Special Instructions**: Allow customers to add special requests or dietary restrictions
-- **Order Summary**: Complete order review before submission
-- **Confirmation Flow**: Professional order confirmation with estimated delivery time
+### Admin Panel
+- **Sales Reports** - Line charts, pie charts, statistics
+- **Orders Management** - Filter, add, edit, delete orders
+- **Inventory Management** - Track supplies, low stock alerts
 
-### 🎨 Professional Design
-- **Modern UI**: Clean, professional interface using Tailwind CSS
-- **Color Scheme**: Custom primary (blue) and secondary (yellow) color palette
-- **Responsive Layout**: Works perfectly on desktop, tablet, and mobile devices
-- **Smooth Animations**: Hover effects and transitions for better user experience
-
-## Technology Stack
-
-- **Frontend**: React 18
-- **Styling**: Tailwind CSS
-- **Icons**: Heroicons (SVG icons)
-- **State Management**: React Hooks (useState)
-- **Build Tool**: Create React App
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js (version 14 or higher)
-- npm or yarn
+- Node.js (v14+)
+- MySQL Server
+- npm
 
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd food-ordering-system
-```
-
-2. Install dependencies:
+### 1. Install Dependencies
 ```bash
 npm install
+npm run backend:install
 ```
 
-3. Start the development server:
+### 2. Configure Database
+Create `backend/.env`:
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=chox_food_ordering
+DB_USER=root
+DB_PASSWORD=root
+JWT_SECRET=chox-admin-secret-key-2024
+PORT=3001
+NODE_ENV=development
+```
+
+### 3. Create MySQL Database
+```sql
+CREATE DATABASE chox_food_ordering;
+```
+
+### 4. Setup Database
 ```bash
-npm start
+npm run backend:migrate
+npm run backend:seed
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-## Project Structure
-
-```
-src/
-├── components/
-│   ├── Header.js          # Navigation header with cart indicator
-│   ├── Menu.js            # Menu display with category filtering
-│   ├── Cart.js            # Shopping cart sidebar
-│   └── OrderSummary.js    # Order confirmation modal
-├── App.js                 # Main application component
-├── App.css                # Custom styles
-└── index.css              # Tailwind CSS imports
+### 5. Start Development
+```bash
+npm run dev
 ```
 
-## Key Components
+### 6. Access Application
+- **Frontend:** http://localhost:3000
+- **Admin Panel:** http://localhost:3000/admin/signin
+  - Username: `admin`
+  - Password: `admin123`
 
-### Header Component
-- Displays restaurant branding
-- Shows cart item count
-- Navigation menu
+## 📁 Project Structure
 
-### Menu Component
-- Displays menu items in a responsive grid
-- Category filtering functionality
-- Add to cart functionality
-
-### Cart Component
-- Sidebar cart display
-- Quantity management
-- Remove items functionality
-- Checkout button
-
-### OrderSummary Component
-- Customer information form
-- Order review
-- Order confirmation flow
-
-## Customization
-
-### Adding New Menu Items
-Edit the `menuItems` array in `src/components/Menu.js`:
-
-```javascript
-const menuItems = [
-  {
-    id: 15,
-    name: 'New Item',
-    price: 12.99,
-    category: 'mains',
-    description: 'Description of the new item',
-    image: '🍕'
-  },
-  // ... more items
-];
+```
+CHOX/                          # Frontend root
+├── src/                       # React components
+│   └── components/
+│       └── admin/            # Admin panel UI
+├── public/                    # Static assets
+├── build/                     # Production build
+│
+└── backend/                   # Backend API
+    ├── src/
+    │   ├── index.ts           # Development server
+    │   ├── routes/            # API routes
+    │   ├── models/           # Database models
+    │   └── database/         # Migrations & seeds
+    ├── server.js              # Production server ⭐
+    └── .env                   # Database config
 ```
 
-### Modifying Categories
-Update the `categories` array in `src/components/Menu.js`:
+## 🔧 Available Commands
 
-```javascript
-const categories = [
-  { id: 'all', name: 'All Items' },
-  { id: 'new-category', name: 'New Category' },
-  // ... more categories
-];
+### Development
+```bash
+npm run dev                    # Run both frontend & backend
+npm start                      # Frontend only (port 3000)
+npm run backend:dev           # Backend only (port 3001)
 ```
 
-### Styling Customization
-The color scheme can be modified in `tailwind.config.js`:
-
-```javascript
-colors: {
-  primary: {
-    // Your custom primary colors
-  },
-  secondary: {
-    // Your custom secondary colors
-  }
-}
+### Production
+```bash
+npm run build                  # Build frontend
+npm run backend:build         # Build backend TypeScript
+npm run serve                 # Start production server
 ```
 
-## Future Enhancements
+### Database
+```bash
+npm run backend:migrate       # Run migrations
+npm run backend:seed          # Seed database
+```
 
-- **Backend Integration**: Connect to a real API for order processing
-- **Payment Processing**: Integrate payment gateways
-- **User Authentication**: Add user accounts and order history
-- **Admin Dashboard**: Management interface for restaurant staff
-- **Real-time Updates**: WebSocket integration for order status updates
-- **Mobile App**: React Native version for mobile devices
+## 🎨 Admin Panel Features
 
-## Contributing
+### Sales Reports (`/admin/reports/sales`)
+- 📊 Line graph for sales trends (weekly/monthly/yearly/all time)
+- 🥧 Pie chart showing top-selling products
+- 📈 Statistics cards (total sales, orders, average order value)
+- 📄 Paginated sales table (30 per page)
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+### Orders Reports (`/admin/reports/orders`)
+- 📋 Orders table with complete details
+- 🔍 Filter by Order ID, customer name, and date range
+- ➕ Manually add new orders
+- ✏️ Edit existing orders
+- 🗑️ Delete orders
+- 📄 Pagination (30 per page)
 
-## License
+### Inventory Reports (`/admin/reports/inventory`)
+- 📦 Inventory items with stock levels
+- 🔴 Low stock items highlighted automatically
+- ➕ Add new supplies
+- 📝 Add quantity to existing items
+- ✏️ Edit inventory items
+- 🗑️ Delete items
+- 📄 Pagination (30 per page)
+
+## 🔐 API Endpoints
+
+### Authentication
+- `POST /api/admin/signin` - Admin login
+
+### Reports
+- `GET /api/admin/reports/sales` - Sales reports with charts
+- `GET /api/admin/reports/orders` - Orders reports
+- `GET /api/admin/reports/inventory` - Inventory reports
+
+### Orders
+- `GET /api/admin/orders` - List all orders
+- `POST /api/admin/orders` - Create order
+- `PUT /api/admin/orders/:id` - Update order
+- `DELETE /api/admin/orders/:id` - Delete order
+
+### Inventory
+- `GET /api/admin/inventory` - List all items
+- `POST /api/admin/inventory` - Add item
+- `PUT /api/admin/inventory/:id` - Update item
+- `PUT /api/admin/inventory/:id/add-quantity` - Add quantity
+- `DELETE /api/admin/inventory/:id` - Delete item
+
+## 🛠️ Technology Stack
+
+### Frontend
+- React 18
+- Tailwind CSS
+- React Router
+- Fetch API
+
+### Backend
+- Node.js & Express
+- TypeScript
+- Sequelize ORM
+- MySQL
+- JWT Authentication
+- bcryptjs
+
+## 📚 Documentation
+
+- [SETUP_GUIDE.md](SETUP_GUIDE.md) - Detailed setup instructions
+- [QUICK_START.md](QUICK_START.md) - Quick start guide
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - File structure
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
+- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Implementation details
+
+## 🎯 Default Credentials
+
+**Admin Login:**
+- Username: `admin`
+- Password: `admin123`
+
+## 📝 License
 
 This project is licensed under the MIT License.
-
-## Support
-
-For support or questions, please contact the development team or create an issue in the repository.

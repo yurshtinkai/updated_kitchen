@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import OrderSummary from './OrderSummary';
 import './MenuPage.css';
 
-const MenuPage = () => {
+const MenuWithCart = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState([]);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -18,27 +20,20 @@ const MenuPage = () => {
   ];
 
   const menuItems = [
-    // Appetizers
     { id: 1, name: 'Caesar Salad', price: 8.99, category: 'appetizers', description: 'Fresh romaine lettuce with parmesan cheese and croutons', image: '/1.jpg', popular: true },
     { id: 2, name: 'Buffalo Wings', price: 12.99, category: 'appetizers', description: 'Spicy chicken wings with blue cheese dip', image: '/2.jpg', popular: false },
     { id: 3, name: 'Mozzarella Sticks', price: 9.99, category: 'appetizers', description: 'Crispy breaded mozzarella with marinara sauce', image: '/3.jpg', popular: true },
     { id: 4, name: 'Bruschetta', price: 7.99, category: 'appetizers', description: 'Toasted bread with fresh tomatoes and basil', image: '/4.jpg', popular: false },
-    
-    // Main Courses
     { id: 5, name: 'Grilled Salmon', price: 18.99, category: 'mains', description: 'Fresh Atlantic salmon with lemon herb butter', image: '/5.jpg', popular: true },
     { id: 6, name: 'Beef Burger', price: 14.99, category: 'mains', description: 'Juicy beef patty with lettuce, tomato, and special sauce', image: '/6.jpg', popular: true },
     { id: 7, name: 'Chicken Parmesan', price: 16.99, category: 'mains', description: 'Breaded chicken breast with marinara and mozzarella', image: '/7.jpg', popular: false },
     { id: 8, name: 'Vegetarian Pasta', price: 13.99, category: 'mains', description: 'Penne pasta with seasonal vegetables and olive oil', image: '/8.jpg', popular: false },
     { id: 9, name: 'Ribeye Steak', price: 24.99, category: 'mains', description: 'Premium ribeye steak cooked to perfection', image: '/1.jpg', popular: true },
     { id: 10, name: 'Fish & Chips', price: 15.99, category: 'mains', description: 'Beer-battered fish with crispy fries', image: '/2.jpg', popular: false },
-    
-    // Desserts
     { id: 11, name: 'Mango Tapoica', price: 6.99, category: 'desserts', description: 'Rich chocolate cake with vanilla ice cream', image: '/3.jpg', popular: true },
     { id: 12, name: 'Tiramisu', price: 7.99, category: 'desserts', description: 'Classic Italian dessert with coffee and mascarpone', image: '/4.jpg', popular: true },
     { id: 13, name: 'Chicken Katsu W/ Cucumber', price: 150, category: 'desserts', description: 'Three scoops with your choice of toppings', image: '/5.jpg', popular: false },
     { id: 14, name: 'Cheesecake', price: 6.99, category: 'desserts', description: 'New York style cheesecake with berry compote', image: '/6.jpg', popular: false },
-    
-    // Beverages
     { id: 15, name: 'Fresh Orange Juice', price: 4.99, category: 'beverages', description: 'Freshly squeezed orange juice', image: '/7.jpg', popular: false },
     { id: 16, name: 'Premium Coffee', price: 3.99, category: 'beverages', description: 'Premium roasted coffee beans', image: '/8.jpg', popular: true },
     { id: 17, name: 'Soft Drinks', price: 2.99, category: 'beverages', description: 'Coke, Pepsi, Sprite, or Fanta', image: '/1.jpg', popular: false },
@@ -49,10 +44,6 @@ const MenuPage = () => {
   const filteredItems = selectedCategory === 'all' 
     ? menuItems 
     : menuItems.filter(item => item.category === selectedCategory);
-
-  // Debug logging
-  console.log('Selected Category:', selectedCategory);
-  console.log('Filtered Items:', filteredItems);
 
   const addToCart = (item) => {
     setCart(prevCart => {
@@ -68,8 +59,41 @@ const MenuPage = () => {
     });
   };
 
+  const removeFromCart = (itemId) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== itemId));
+  };
+
+  const updateQuantity = (itemId, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+    setCart(prevCart =>
+      prevCart.map(item =>
+        item.id === itemId ? { ...item, quantity: newQuantity } : item
+      )
+    );
+  };
+
   const getTotalItems = () => {
     return cart.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const getTotalPrice = () => {
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  };
+
+  const handleCheckout = () => {
+    setShowCheckout(true);
+  };
+
+  const handleCompleteOrder = () => {
+    setCart([]);
+    setShowCheckout(false);
+  };
+
+  const handleCloseCheckout = () => {
+    setShowCheckout(false);
   };
 
   const openModal = (item) => {
@@ -83,18 +107,18 @@ const MenuPage = () => {
   };
 
   const getItemImages = (item) => {
-    // Special case for Caesar Salad to show multiple angles
+   
     if (item.id === 1) {
       return ['/1.jpg', '/sandwich.jpg', '/sandwich1.jpg', '/sandwich3.jpg'];
     }
     
-    // Special case for Craft Beer (id 18) to show multiple angles
+   
     if (item.id === 18) {
       return ['/2.jpg', '/bonelessPorkchop.jpg', '/bonelessPorkchop1.jpg'];
     }
     
     if (item.id === 11) {
-      return ['/3.jpg','/mangoTapoica/jpg','/mangoTapoica1.jpg'];
+      return ['/3.jpg','/mangoTapoica.jpg','/mangoTapoica1.jpg'];
     }
     // For other items, just show the main image
     return [item.image];
@@ -124,9 +148,14 @@ const MenuPage = () => {
                 Discover our carefully crafted selection of delicious dishes, 
                 prepared with the finest ingredients and culinary expertise.
               </p>
-              <div className="cart-indicator">
-                <span className="cart-icon">🛒</span>
-                <span className="cart-count">{getTotalItems()} items</span>
+              <div className="cart-info">
+                <button className="cart-button" onClick={handleCheckout} disabled={cart.length === 0}>
+                  <span className="cart-icon">🛒</span>
+                  <span className="cart-count">{getTotalItems()} items</span>
+                  {cart.length > 0 && (
+                    <span className="cart-total">${getTotalPrice().toFixed(2)}</span>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -197,35 +226,32 @@ const MenuPage = () => {
           </div>
         </section>
 
-        {/* Special Offers */}
-        <section className="special-offers">
-          <div className="container">
-            <h2 className="section-title">Special Offers</h2>
-            <div className="offers-grid">
-              <div className="offer-card">
-                <div className="offer-icon">🍕</div>
-                <h3>Pizza Combo</h3>
-                <p>Any large pizza + 2 drinks for $19.99</p>
-                <span className="offer-price">Save $5</span>
-              </div>
-              <div className="offer-card">
-                <div className="offer-icon">🍔</div>
-                <h3>Burger Deal</h3>
-                <p>Burger + Fries + Drink for $12.99</p>
-                <span className="offer-price">Save $3</span>
-              </div>
-              <div className="offer-card">
-                <div className="offer-icon">🍰</div>
-                <h3>Dessert Special</h3>
-                <p>Any 2 desserts for $10.99</p>
-                <span className="offer-price">Save $2</span>
-              </div>
+        {/* Floating Cart Summary */}
+        {cart.length > 0 && !showCheckout && (
+          <div className="floating-cart">
+            <div className="cart-summary">
+              <span>{getTotalItems()} items in cart</span>
+              <span className="cart-total">${getTotalPrice().toFixed(2)}</span>
+              <button onClick={handleCheckout} className="checkout-btn">
+                Checkout
+              </button>
             </div>
           </div>
-        </section>
+        )}
       </main>
 
       <Footer />
+
+      {/* Order Summary Modal */}
+      {showCheckout && (
+        <OrderSummary
+          cart={cart}
+          totalPrice={getTotalPrice()}
+          onClose={handleCloseCheckout}
+          onComplete={handleCompleteOrder}
+          updateCart={setCart}
+        />
+      )}
 
       {/* Menu Item Modal */}
       {selectedItem && (
@@ -261,4 +287,5 @@ const MenuPage = () => {
   );
 };
 
-export default MenuPage;
+export default MenuWithCart;
+
