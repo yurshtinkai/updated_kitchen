@@ -570,11 +570,11 @@
   }
 }
 
-.modal-close-btn {
+.menu-modal .modal-close-btn {
   display: none;
 }
 
-.modal-image-container {
+.menu-modal .modal-image-container {
   width: 500px;
   height: 500px;
   aspect-ratio: 1;
@@ -587,7 +587,7 @@
   background: linear-gradient(135deg, #2a2214 0%, #1a1612 100%);
 }
 
-.modal-food-image {
+.menu-modal .modal-food-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -595,11 +595,11 @@
   display: block;
 }
 
-.modal-popular-badge {
+.menu-modal .modal-popular-badge {
   display: none;
 }
 
-.modal-arrow {
+.menu-modal .modal-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -619,21 +619,21 @@
   font-weight: 300;
 }
 
-.modal-arrow:hover {
+.menu-modal .modal-arrow:hover {
   background: #ffd700;
   color: #1a1612;
   transform: translateY(-50%) scale(1.1);
 }
 
-.modal-arrow.left {
+.menu-modal .modal-arrow.left {
   left: 15px;
 }
 
-.modal-arrow.right {
+.menu-modal .modal-arrow.right {
   right: 15px;
 }
 
-.image-counter {
+.menu-modal .image-counter {
   position: absolute;
   bottom: 20px;
   left: 50%;
@@ -647,12 +647,12 @@
   z-index: 10;
 }
 
-.modal-content {
+.menu-modal .modal-content {
   padding: 0;
   display: none;
 }
 
-.modal-item-name {
+.menu-modal .modal-item-name {
   font-size: 2rem;
   font-weight: 700;
   background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
@@ -663,21 +663,21 @@
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-.modal-item-description {
+.menu-modal .modal-item-description {
   color: #f5e6d3;
   font-size: 1.1rem;
   line-height: 1.8;
   margin-bottom: 20px;
 }
 
-.modal-item-category {
+.menu-modal .modal-item-category {
   color: #c0c0c0;
   font-size: 0.95rem;
   margin-bottom: 15px;
   font-weight: 500;
 }
 
-.modal-item-price {
+.menu-modal .modal-item-price {
   font-size: 2.5rem;
   font-weight: 800;
   background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
@@ -688,7 +688,7 @@
   text-align: center;
 }
 
-.modal-add-to-cart-btn {
+.menu-modal .modal-add-to-cart-btn {
   width: 100%;
   padding: 18px;
   background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
@@ -704,13 +704,13 @@
   box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
 }
 
-.modal-add-to-cart-btn:hover {
+.menu-modal .modal-add-to-cart-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 12px 35px rgba(255, 215, 0, 0.6);
   background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
 }
 
-.modal-add-to-cart-btn:active {
+.menu-modal .modal-add-to-cart-btn:active {
   transform: translateY(0);
 }
 
@@ -719,7 +719,7 @@
     max-width: 90%;
   }
 
-  .modal-image-container {
+  .menu-modal .modal-image-container {
     width: 350px;
     height: 350px;
     aspect-ratio: 1;
@@ -727,7 +727,7 @@
 }
 
 @media (max-width: 480px) {
-  .modal-image-container {
+  .menu-modal .modal-image-container {
     width: 280px;
     height: 280px;
     aspect-ratio: 1;

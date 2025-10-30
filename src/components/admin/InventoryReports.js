@@ -18,6 +18,13 @@ const InventoryReports = () => {
     minStockLevel: 0,
     supplier: '',
   });
+  
+  const supplyCategories = [
+    'Appetizers',
+    'Main Courses',
+    'Desserts',
+    'Beverages',
+  ];
 
   useEffect(() => {
     fetchInventory();
@@ -291,58 +298,87 @@ const InventoryReports = () => {
         <div className="modal" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Add New Supply</h2>
-            <form onSubmit={handleSubmit}>
-              <input
-                type="text"
-                placeholder="Name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-              <input
-                type="text"
-                placeholder="Category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-              />
-              <input
-                type="number"
-                placeholder="Quantity"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
-                min="0"
-                step="0.01"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Unit (pcs, kg, lbs, etc.)"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                required
-              />
-              <input
-                type="number"
-                placeholder="Min Stock Level"
-                value={formData.minStockLevel}
-                onChange={(e) => setFormData({ ...formData, minStockLevel: parseFloat(e.target.value) })}
-                min="0"
-                step="0.01"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Supplier"
-                value={formData.supplier}
-                onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-              />
-              
-              <div className="modal-buttons">
-                <button type="submit">Add Supply</button>
+            <form onSubmit={handleSubmit} className="admin-form">
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Chicken Breast"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    required
+                  >
+                    <option value="" disabled>Select a category</option>
+                    {supplyCategories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Quantity</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Unit</label>
+                  <input
+                    type="text"
+                    placeholder="pcs, kg, lbs, etc."
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Min Stock Level</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={formData.minStockLevel}
+                    onChange={(e) => setFormData({ ...formData, minStockLevel: parseFloat(e.target.value) })}
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                  <div className="form-hint">You'll be alerted when stock drops below this.</div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Supplier</label>
+                  <input
+                    type="text"
+                    placeholder="Optional"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-buttons form-actions">
                 <button type="button" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
+                <button type="submit">Add Supply</button>
               </div>
             </form>
           </div>

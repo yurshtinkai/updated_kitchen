@@ -49,7 +49,7 @@ Order.init(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('pending', 'processing', 'completed', 'cancelled'),
+      type: DataTypes.ENUM('pending', 'processing', 'out_for_delivery', 'completed', 'cancelled'),
       defaultValue: 'pending',
     },
     orderDate: {

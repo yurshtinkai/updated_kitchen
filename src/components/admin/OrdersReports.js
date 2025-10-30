@@ -21,6 +21,7 @@ const OrdersReports = () => {
     items: [{ productId: '', quantity: 1 }],
   });
   const [products, setProducts] = useState([]);
+  const [cancelModal, setCancelModal] = useState({ open: false, orderId: null, reason: '' });
 
   useEffect(() => {
     fetchOrders();
@@ -108,6 +109,102 @@ const OrdersReports = () => {
       }
     } catch (err) {
       alert('Error updating order status');
+    }
+  };
+
+  const openCancelModal = (orderId) => {
+    setCancelModal({ open: true, orderId, reason: '' });
+  };
+
+  const submitCancellation = async () => {
+    if (!cancelModal.orderId) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:3001/api/admin/orders/${cancelModal.orderId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'cancelled', cancellationReason: cancelModal.reason })
+      });
+
+      if (response.ok) {
+        setCancelModal({ open: false, orderId: null, reason: '' });
+        fetchOrders();
+      } else {
+        alert('Failed to cancel order');
+      }
+    } catch (err) {
+      alert('Error cancelling order');
+    }
+  };
+
+  const markProcessing = (orderId) => handleUpdateStatus(orderId, 'processing');
+  const markOutForDelivery = (orderId) => handleUpdateStatus(orderId, 'out_for_delivery');
+  const markCompleted = (orderId) => handleUpdateStatus(orderId, 'completed');
+
+  const isSlaBreached = (order) => {
+    try {
+      if (order.status !== 'pending') return false;
+      const created = new Date(order.orderDate || order.createdAt);
+      const diffMs = Date.now() - created.getTime();
+      const diffMin = diffMs / 60000;
+      return diffMin >= 30;
+    } catch {
+      return false;
+    }
+  };
+
+  const printInvoice = (order) => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const itemsHtml = (order.Items || []).map((it, idx) =>
+      `<tr><td>${idx + 1}</td><td>${it.productName}</td><td>${it.quantity}</td><td>$${parseFloat(it.price).toFixed(2)}</td><td>$${parseFloat(it.subtotal).toFixed(2)}</td></tr>`
+    ).join('');
+    win.document.write(`
+      <html><head><title>Invoice #${order.id}</title>
+      <style>
+        body{font-family:Arial;padding:24px;color:#111}
+        h1{margin:0 0 8px}
+        .muted{color:#666}
+        table{width:100%;border-collapse:collapse;margin-top:16px}
+        th,td{border:1px solid #ddd;padding:8px;text-align:left}
+        tfoot td{font-weight:bold}
+      </style></head><body>
+      <h1>Invoice #${order.id}</h1>
+      <div class="muted">${new Date(order.orderDate || order.createdAt).toLocaleString()}</div>
+      <div style="margin-top:10px">
+        <div><strong>Customer:</strong> ${order.customerName}</div>
+        ${order.customerEmail ? `<div><strong>Email:</strong> ${order.customerEmail}</div>` : ''}
+        ${order.customerPhone ? `<div><strong>Phone:</strong> ${order.customerPhone}</div>` : ''}
+        ${order.deliveryAddress ? `<div><strong>Address:</strong> ${order.deliveryAddress}</div>` : ''}
+      </div>
+      <table><thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
+      <tbody>${itemsHtml}</tbody>
+      <tfoot><tr><td colspan="4">Total</td><td>$${parseFloat(order.totalAmount).toFixed(2)}</td></tr></tfoot>
+      </table>
+      </body></html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  const resendEmail = async (orderId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:3001/api/admin/orders/${orderId}/resend-confirmation`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        alert('Confirmation email resent');
+      } else {
+        alert('Resend not available yet on server');
+      }
+    } catch (e) {
+      alert('Resend failed');
     }
   };
 
@@ -296,10 +393,12 @@ const OrdersReports = () => {
                       borderRadius: '4px',
                       backgroundColor: order.status === 'completed' ? '#d1fae5' : 
                                        order.status === 'pending' ? '#fef3c7' : 
-                                       order.status === 'processing' ? '#dbeafe' : '#fee2e2',
+                                       order.status === 'processing' ? '#dbeafe' : 
+                                       order.status === 'out_for_delivery' ? '#cffafe' : '#fee2e2',
                       color: order.status === 'completed' ? '#065f46' : 
                              order.status === 'pending' ? '#92400e' : 
-                             order.status === 'processing' ? '#1e3a8a' : '#991b1b',
+                             order.status === 'processing' ? '#1e3a8a' : 
+                             order.status === 'out_for_delivery' ? '#155e75' : '#991b1b',
                       fontSize: '0.85rem',
                       textTransform: 'capitalize'
                     }}>
@@ -307,31 +406,23 @@ const OrdersReports = () => {
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-                      {order.status !== 'completed' && (
-                        <button 
-                          onClick={() => handleUpdateStatus(order.id, 'completed')}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#059669',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          Mark as Completed
-                        </button>
+                    <div className={`order-actions ${isSlaBreached(order) ? 'sla-breached' : ''}`}>
+                      {order.status === 'pending' && (
+                        <button onClick={() => markProcessing(order.id)} className="edit-btn">Start Processing</button>
                       )}
-                      <button 
-                        onClick={() => handleDelete(order.id)} 
-                        className="delete-btn"
-                        style={{ fontSize: '0.85rem' }}
-                      >
-                        Delete
-                      </button>
+                      {order.status === 'processing' && (
+                        <button onClick={() => markOutForDelivery(order.id)} className="edit-btn">Out for delivery</button>
+                      )}
+                      {order.status === 'out_for_delivery' && (
+                        <button onClick={() => markCompleted(order.id)} className="add-btn">Mark Completed</button>
+                      )}
+                      {order.status !== 'cancelled' && order.status !== 'completed' && (
+                        <button onClick={() => openCancelModal(order.id)} className="delete-btn">Cancel</button>
+                      )}
+                      <button onClick={() => printInvoice(order)} className="add-btn" style={{ background: '#374151' }}>Print Invoice</button>
+                      {order.customerEmail && (
+                        <button onClick={() => resendEmail(order.id)} className="edit-btn">Resend Email</button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -349,7 +440,8 @@ const OrdersReports = () => {
                   <span className={`mobile-card-status ${
                     order.status === 'completed' ? 'completed' : 
                     order.status === 'pending' ? 'pending' : 
-                    order.status === 'processing' ? 'processing' : 'cancelled'
+                    order.status === 'processing' ? 'processing' : 
+                    order.status === 'out_for_delivery' ? 'out_for_delivery' : 'cancelled'
                   }`}>
                     {order.status}
                   </span>
@@ -394,23 +486,24 @@ const OrdersReports = () => {
                     </span>
                   </div>
                 </div>
-                <div className="mobile-card-actions">
-                  {order.status !== 'completed' && (
-                    <button
-                      onClick={() => handleUpdateStatus(order.id, 'completed')}
-                      className="edit-btn"
-                      style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: 'white' }}
-                    >
-                      Mark Complete
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(order.id)}
-                    className="delete-btn"
-                  >
-                    Delete
-                  </button>
-                </div>
+              <div className={`mobile-card-actions ${isSlaBreached(order) ? 'sla-breached' : ''}`}>
+                {order.status === 'pending' && (
+                  <button onClick={() => markProcessing(order.id)} className="edit-btn">Start</button>
+                )}
+                {order.status === 'processing' && (
+                  <button onClick={() => markOutForDelivery(order.id)} className="edit-btn">Out</button>
+                )}
+                {order.status === 'out_for_delivery' && (
+                  <button onClick={() => markCompleted(order.id)} className="add-btn">Complete</button>
+                )}
+                {order.status !== 'cancelled' && order.status !== 'completed' && (
+                  <button onClick={() => openCancelModal(order.id)} className="delete-btn">Cancel</button>
+                )}
+                <button onClick={() => printInvoice(order)} className="add-btn" style={{ background: '#374151' }}>Invoice</button>
+                {order.customerEmail && (
+                  <button onClick={() => resendEmail(order.id)} className="edit-btn">Resend</button>
+                )}
+              </div>
               </div>
             ))}
           </div>
@@ -485,6 +578,30 @@ const OrdersReports = () => {
           </div>
         </div>
       )}
+
+  {cancelModal.open && (
+    <div className="modal" onClick={() => setCancelModal({ open: false, orderId: null, reason: '' })}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h2>Cancel Order</h2>
+        <div className="admin-form">
+          <div className="form-group">
+            <label className="form-label">Reason</label>
+            <select value={cancelModal.reason} onChange={(e) => setCancelModal({ ...cancelModal, reason: e.target.value })}>
+              <option value="">Select a reason</option>
+              <option value="customer_request">Customer request</option>
+              <option value="payment_issue">Payment issue</option>
+              <option value="inventory_shortage">Inventory shortage</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div className="modal-buttons form-actions">
+          <button type="button" onClick={() => setCancelModal({ open: false, orderId: null, reason: '' })}>Close</button>
+          <button type="button" onClick={submitCancellation} disabled={!cancelModal.reason}>Confirm Cancel</button>
+        </div>
+      </div>
+    </div>
+  )}
     </div>
   );
 };
