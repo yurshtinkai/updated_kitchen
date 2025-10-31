@@ -43,7 +43,11 @@ const OrderTracking = () => {
   if (loading) {
     return (
       <div className="tracking-container">
-        <div className="loading-spinner">Loading order details...</div>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <h2 className="loading-text">Tracking Your Order</h2>
+          <p className="loading-subtext">Please wait while we fetch your order details...</p>
+        </div>
       </div>
     );
   }
@@ -51,22 +55,35 @@ const OrderTracking = () => {
   if (error || !order) {
     return (
       <div className="tracking-container">
-        <div className="error-message">
-          <h2>Order Not Found</h2>
-          <p>{error || 'Unable to find the order with this tracking code.'}</p>
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <h2 className="error-title">Order Not Found</h2>
+          <p className="error-message-text">{error || 'Unable to find the order with this tracking code.'}</p>
+          <p className="error-hint">Please check your tracking link and try again.</p>
         </div>
       </div>
     );
   }
 
   const statusSteps = getStatusSteps();
-  const currentStatusIndex = statusSteps.findIndex(step => step.key === order.status);
 
   return (
     <div className="tracking-container">
       <div className="tracking-header">
+        <div className="tracking-logo">
+          <img 
+            src="/logo.jpg" 
+            alt="CHOX Kitchen Logo" 
+            className="tracking-logo-image"
+          />
+        </div>
         <h1>Order Tracking</h1>
         <p className="order-id">Order #{order.id}</p>
+        <div className="order-badge">
+          <span className={`status-badge status-${order.status}`}>
+            {order.status.replace('_', ' ').toUpperCase()}
+          </span>
+        </div>
       </div>
 
       <div className="tracking-card">
@@ -90,95 +107,205 @@ const OrderTracking = () => {
         </div>
 
         {/* Current Status Message */}
-        <div className={`status-message status-${order.status}`}>
-          {order.status === 'pending' && (
-            <p>Your order has been received and is waiting for confirmation.</p>
-          )}
-          {order.status === 'preparing' && (
-            <div>
-              <p className="cooking-text">🔥 Our chefs are preparing your delicious meal!</p>
-            </div>
-          )}
-          {order.status === 'on_the_way' && (
-            <p>🚗 Your order is on the way! It should arrive soon.</p>
-          )}
-          {order.status === 'delivered' && (
-            <p>✅ Your order has been delivered! Enjoy your meal!</p>
-          )}
-          {order.status === 'completed' && (
-            <p>✅ Order completed. Thank you for choosing CHOX Kitchen!</p>
-          )}
+        <div className={`status-banner status-${order.status}`}>
+          <div className="status-banner-icon">
+            {order.status === 'pending' && '⏳'}
+            {order.status === 'preparing' && '👨‍🍳'}
+            {order.status === 'on_the_way' && '🚗'}
+            {order.status === 'delivered' && '✅'}
+            {order.status === 'completed' && '🎉'}
+          </div>
+          <div className="status-banner-content">
+            {order.status === 'pending' && (
+              <div>
+                <h3>Order Received</h3>
+                <p>Your order has been received and is waiting for confirmation.</p>
+              </div>
+            )}
+            {order.status === 'preparing' && (
+              <div>
+                <h3>Preparing Your Meal</h3>
+                <p className="cooking-text">🔥 Our chefs are preparing your delicious meal!</p>
+              </div>
+            )}
+            {order.status === 'on_the_way' && (
+              <div>
+                <h3>Out for Delivery</h3>
+                <p>🚗 Your order is on the way! It should arrive soon.</p>
+              </div>
+            )}
+            {order.status === 'delivered' && (
+              <div>
+                <h3>Delivered Successfully</h3>
+                <p>✅ Your order has been delivered! Enjoy your meal!</p>
+              </div>
+            )}
+            {order.status === 'completed' && (
+              <div>
+                <h3>Order Completed</h3>
+                <p>✅ Order completed. Thank you for choosing CHOX Kitchen!</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Order Details */}
-        <div className="order-details">
-          <h3>Order Details</h3>
-          <div className="detail-row">
-            <span className="detail-label">Customer:</span>
-            <span className="detail-value">{order.customerName}</span>
+        <div className="order-info-section">
+          <div className="section-header">
+            <div className="section-icon">📋</div>
+            <h3>Order Information</h3>
           </div>
-          {order.customerPhone && (
+          <div className="order-details">
             <div className="detail-row">
-              <span className="detail-label">Phone:</span>
-              <span className="detail-value">{order.customerPhone}</span>
+              <div className="detail-group">
+                <span className="detail-label">Customer Name</span>
+                <span className="detail-value">{order.customerName}</span>
+              </div>
             </div>
-          )}
-          {order.deliveryAddress && (
+            {order.customerEmail && (
+              <div className="detail-row">
+                <div className="detail-group">
+                  <span className="detail-label">Email</span>
+                  <span className="detail-value">{order.customerEmail}</span>
+                </div>
+              </div>
+            )}
+            {order.customerPhone && (
+              <div className="detail-row">
+                <div className="detail-group">
+                  <span className="detail-label">Phone Number</span>
+                  <span className="detail-value">{order.customerPhone}</span>
+                </div>
+              </div>
+            )}
+            {order.deliveryAddress && (
+              <div className="detail-row">
+                <div className="detail-group">
+                  <span className="detail-label">Delivery Address</span>
+                  <span className="detail-value">{order.deliveryAddress}</span>
+                </div>
+              </div>
+            )}
+            {order.specialInstructions && (
+              <div className="detail-row">
+                <div className="detail-group">
+                  <span className="detail-label">Special Instructions</span>
+                  <span className="detail-value special-instructions">{order.specialInstructions}</span>
+                </div>
+              </div>
+            )}
             <div className="detail-row">
-              <span className="detail-label">Delivery Address:</span>
-              <span className="detail-value">{order.deliveryAddress}</span>
+              <div className="detail-group">
+                <span className="detail-label">Order Date</span>
+                <span className="detail-value">{new Date(order.orderDate).toLocaleString('en-US', { 
+                  weekday: 'long',
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</span>
+              </div>
             </div>
-          )}
-          <div className="detail-row">
-            <span className="detail-label">Order Date:</span>
-            <span className="detail-value">{new Date(order.orderDate).toLocaleString()}</span>
           </div>
         </div>
 
         {/* Order Items */}
-        <div className="order-items">
-          <h3>Order Items</h3>
+        <div className="order-info-section">
+          <div className="section-header">
+            <div className="section-icon">🍽️</div>
+            <h3>Order Items</h3>
+          </div>
           <div className="items-list">
             {order.Items?.map((item, index) => (
-              <div key={item.id || index} className="item-row">
-                <span className="item-name">{item.productName}</span>
-                <span className="item-quantity">x {item.quantity}</span>
+              <div key={item.id || index} className="item-card">
+                <div className="item-info">
+                  <span className="item-name">{item.productName}</span>
+                  <span className="item-quantity">Quantity: {item.quantity}</span>
+                </div>
                 <span className="item-price">${parseFloat(item.subtotal).toFixed(2)}</span>
               </div>
             ))}
           </div>
-          <div className="order-total">
-            <span className="total-label">Total:</span>
-            <span className="total-amount">${parseFloat(order.totalAmount).toFixed(2)}</span>
-          </div>
-          <div className="payment-info">
-            <p className="downpayment">Downpayment (50%): ${(parseFloat(order.totalAmount) * 0.5).toFixed(2)}</p>
-            <p className="balance">Remaining Balance: ${(parseFloat(order.totalAmount) * 0.5).toFixed(2)}</p>
+          <div className="payment-summary">
+            <div className="payment-row">
+              <span className="payment-label">Subtotal:</span>
+              <span className="payment-value">${parseFloat(order.totalAmount).toFixed(2)}</span>
+            </div>
+            <div className="payment-row highlight">
+              <span className="payment-label">Downpayment (50%):</span>
+              <span className="payment-value">${(parseFloat(order.totalAmount) * 0.5).toFixed(2)}</span>
+            </div>
+            <div className="payment-row">
+              <span className="payment-label">Remaining Balance:</span>
+              <span className="payment-value">${(parseFloat(order.totalAmount) * 0.5).toFixed(2)}</span>
+            </div>
+            <div className="order-total">
+              <span className="total-label">Total Amount:</span>
+              <span className="total-amount">${parseFloat(order.totalAmount).toFixed(2)}</span>
+            </div>
           </div>
         </div>
 
         {/* Receipt Display */}
         {order.receiptImage && (
-          <div className="receipt-section">
-            <h3>Downpayment Receipt</h3>
-            <img 
-              src={`http://localhost:3001${order.receiptImage}`} 
-              alt="Receipt" 
-              className="receipt-image"
-            />
+          <div className="order-info-section">
+            <div className="section-header">
+              <div className="section-icon">🧾</div>
+              <h3>Payment Receipt</h3>
+            </div>
+            <div className="receipt-display">
+              <img 
+                src={`http://localhost:3001${order.receiptImage}`} 
+                alt="Downpayment Receipt" 
+                className="receipt-image"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: #dc2626;">
+                      <p>Failed to load receipt image</p>
+                    </div>
+                  `;
+                }}
+              />
+            </div>
           </div>
         )}
 
-        {/* Share Button */}
-        <div className="share-section">
+        {/* Action Buttons */}
+        <div className="action-buttons">
           <button
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
-              alert('Tracking link copied to clipboard!');
+              const btn = document.querySelector('.share-button');
+              if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✓ Link Copied!';
+                btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                setTimeout(() => {
+                  btn.innerHTML = originalText;
+                  btn.style.background = '';
+                }, 2000);
+              }
             }}
             className="share-button"
           >
-            📋 Copy Tracking Link
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            Copy Tracking Link
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="print-button"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print Order
           </button>
         </div>
       </div>

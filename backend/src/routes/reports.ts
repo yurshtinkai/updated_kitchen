@@ -57,6 +57,10 @@ router.get('/sales', async (req: AuthenticatedRequest, res: Response) => {
           attributes: ['productId', 'quantity', 'subtotal'],
         },
       ],
+      // IMPORTANT: when including associations, Sequelize can duplicate rows.
+      // distinct ensures count and limit apply to unique Orders.
+      distinct: true,
+      subQuery: false,
       limit: limitNum,
       offset,
       order: [['createdAt', 'DESC']],

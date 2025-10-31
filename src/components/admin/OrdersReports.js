@@ -621,70 +621,95 @@ const OrdersReports = () => {
         </div>
       )}
 
-      {/* Receipt View Modal */}
+      {/* Receipt View Modal - Professional Design */}
       {receiptModal.open && receiptModal.imageUrl && (
-        <div className="modal" onClick={() => setReceiptModal({ open: false, imageUrl: null, loading: false, error: null })}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0 }}>Downpayment Receipt</h2>
+        <div className="modal receipt-modal-overlay" onClick={() => setReceiptModal({ open: false, imageUrl: null, loading: false, error: null })}>
+          <div className="receipt-modal-content" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="receipt-modal-header">
+              <div className="receipt-modal-title-section">
+                <div className="receipt-icon">🧾</div>
+                <div>
+                  <h2 className="receipt-modal-title">Downpayment Receipt</h2>
+                  <p className="receipt-modal-subtitle">Customer Payment Confirmation</p>
+                </div>
+              </div>
               <button
+                className="receipt-modal-close"
                 onClick={() => setReceiptModal({ open: false, imageUrl: null, loading: false, error: null })}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: '#666'
-                }}
                 aria-label="Close receipt modal"
               >
-                ×
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
-            {receiptModal.loading && !receiptModal.error && (
-              <div style={{ padding: '40px', color: '#ffd700' }}>
-                <p style={{ fontSize: '18px' }}>Loading receipt image...</p>
-              </div>
-            )}
-            {receiptModal.error && (
-              <div style={{ padding: '40px', color: '#fca5a5' }}>
-                <p style={{ fontSize: '18px', marginBottom: '10px' }}>❌ Failed to load receipt image</p>
-                <p style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>URL: {receiptModal.imageUrl}</p>
-                <p style={{ fontSize: '12px', color: '#999', marginTop: '10px' }}>Please check if the file exists on the server.</p>
-              </div>
-            )}
-            {!receiptModal.error && (
-              <img
-                src={receiptModal.imageUrl}
-                alt="Receipt"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '70vh',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                  display: receiptModal.loading ? 'none' : 'block'
-                }}
-                onLoad={() => {
-                  setReceiptModal(prev => ({ ...prev, loading: false, error: null }));
-                }}
-                onError={() => {
-                  setReceiptModal(prev => ({ ...prev, loading: false, error: 'Failed to load image' }));
-                }}
-              />
-            )}
-            <div style={{ marginTop: '20px' }}>
+
+            {/* Content */}
+            <div className="receipt-modal-body">
+              {receiptModal.loading && !receiptModal.error && (
+                <div className="receipt-loading-container">
+                  <div className="receipt-loading-spinner"></div>
+                  <p className="receipt-loading-text">Loading receipt image...</p>
+                  <p className="receipt-loading-subtext">Please wait while we fetch the document</p>
+                </div>
+              )}
+              
+              {receiptModal.error && (
+                <div className="receipt-error-container">
+                  <div className="receipt-error-icon">⚠️</div>
+                  <h3 className="receipt-error-title">Failed to Load Receipt</h3>
+                  <p className="receipt-error-message">
+                    The receipt image could not be loaded from the server.
+                  </p>
+                  <div className="receipt-error-details">
+                    <p className="receipt-error-url-label">Requested URL:</p>
+                    <code className="receipt-error-url">{receiptModal.imageUrl}</code>
+                  </div>
+                  <p className="receipt-error-hint">
+                    Please verify that the file exists on the server or contact support if the issue persists.
+                  </p>
+                </div>
+              )}
+              
+              {!receiptModal.error && (
+                <div className="receipt-image-container">
+                  <img
+                    src={receiptModal.imageUrl}
+                    alt="Downpayment Receipt"
+                    className="receipt-image"
+                    style={{ display: receiptModal.loading ? 'none' : 'block' }}
+                    onLoad={() => {
+                      setReceiptModal(prev => ({ ...prev, loading: false, error: null }));
+                    }}
+                    onError={() => {
+                      setReceiptModal(prev => ({ ...prev, loading: false, error: 'Failed to load image' }));
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="receipt-modal-footer">
               <button
+                className="receipt-btn receipt-btn-primary"
                 onClick={() => {
                   window.open(receiptModal.imageUrl, '_blank');
                 }}
-                className="add-btn"
-                style={{ marginRight: '10px' }}
+                disabled={receiptModal.loading || receiptModal.error}
               >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
                 Open in New Tab
               </button>
               <button
+                className="receipt-btn receipt-btn-secondary"
                 onClick={() => setReceiptModal({ open: false, imageUrl: null, loading: false, error: null })}
-                className="delete-btn"
               >
                 Close
               </button>

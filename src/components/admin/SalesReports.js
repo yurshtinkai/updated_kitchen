@@ -73,25 +73,25 @@ const SalesReports = () => {
         <div className="period-selector">
           <button
             className={period === 'weekly' ? 'active' : ''}
-            onClick={() => setPeriod('weekly')}
+            onClick={() => { setPeriod('weekly'); setPage(1); }}
           >
             Weekly
           </button>
           <button
             className={period === 'monthly' ? 'active' : ''}
-            onClick={() => setPeriod('monthly')}
+            onClick={() => { setPeriod('monthly'); setPage(1); }}
           >
             Monthly
           </button>
           <button
             className={period === 'yearly' ? 'active' : ''}
-            onClick={() => setPeriod('yearly')}
+            onClick={() => { setPeriod('yearly'); setPage(1); }}
           >
             Yearly
           </button>
           <button
             className={period === 'all' ? 'active' : ''}
-            onClick={() => setPeriod('all')}
+            onClick={() => { setPeriod('all'); setPage(1); }}
           >
             All Time
           </button>
