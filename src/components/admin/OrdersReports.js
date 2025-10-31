@@ -21,7 +21,7 @@ const OrdersReports = () => {
     items: [{ productId: '', quantity: 1 }],
   });
   const [products, setProducts] = useState([]);
-  const [cancelModal, setCancelModal] = useState({ open: false, orderId: null, reason: '' });
+  const [receiptModal, setReceiptModal] = useState({ open: false, imageUrl: null, loading: false, error: null });
 
   useEffect(() => {
     fetchOrders();
@@ -112,101 +112,6 @@ const OrdersReports = () => {
     }
   };
 
-  const openCancelModal = (orderId) => {
-    setCancelModal({ open: true, orderId, reason: '' });
-  };
-
-  const submitCancellation = async () => {
-    if (!cancelModal.orderId) return;
-    try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:3001/api/admin/orders/${cancelModal.orderId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: 'cancelled', cancellationReason: cancelModal.reason })
-      });
-
-      if (response.ok) {
-        setCancelModal({ open: false, orderId: null, reason: '' });
-        fetchOrders();
-      } else {
-        alert('Failed to cancel order');
-      }
-    } catch (err) {
-      alert('Error cancelling order');
-    }
-  };
-
-  const markProcessing = (orderId) => handleUpdateStatus(orderId, 'processing');
-  const markOutForDelivery = (orderId) => handleUpdateStatus(orderId, 'out_for_delivery');
-  const markCompleted = (orderId) => handleUpdateStatus(orderId, 'completed');
-
-  const isSlaBreached = (order) => {
-    try {
-      if (order.status !== 'pending') return false;
-      const created = new Date(order.orderDate || order.createdAt);
-      const diffMs = Date.now() - created.getTime();
-      const diffMin = diffMs / 60000;
-      return diffMin >= 30;
-    } catch {
-      return false;
-    }
-  };
-
-  const printInvoice = (order) => {
-    const win = window.open('', '_blank');
-    if (!win) return;
-    const itemsHtml = (order.Items || []).map((it, idx) =>
-      `<tr><td>${idx + 1}</td><td>${it.productName}</td><td>${it.quantity}</td><td>$${parseFloat(it.price).toFixed(2)}</td><td>$${parseFloat(it.subtotal).toFixed(2)}</td></tr>`
-    ).join('');
-    win.document.write(`
-      <html><head><title>Invoice #${order.id}</title>
-      <style>
-        body{font-family:Arial;padding:24px;color:#111}
-        h1{margin:0 0 8px}
-        .muted{color:#666}
-        table{width:100%;border-collapse:collapse;margin-top:16px}
-        th,td{border:1px solid #ddd;padding:8px;text-align:left}
-        tfoot td{font-weight:bold}
-      </style></head><body>
-      <h1>Invoice #${order.id}</h1>
-      <div class="muted">${new Date(order.orderDate || order.createdAt).toLocaleString()}</div>
-      <div style="margin-top:10px">
-        <div><strong>Customer:</strong> ${order.customerName}</div>
-        ${order.customerEmail ? `<div><strong>Email:</strong> ${order.customerEmail}</div>` : ''}
-        ${order.customerPhone ? `<div><strong>Phone:</strong> ${order.customerPhone}</div>` : ''}
-        ${order.deliveryAddress ? `<div><strong>Address:</strong> ${order.deliveryAddress}</div>` : ''}
-      </div>
-      <table><thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
-      <tbody>${itemsHtml}</tbody>
-      <tfoot><tr><td colspan="4">Total</td><td>$${parseFloat(order.totalAmount).toFixed(2)}</td></tr></tfoot>
-      </table>
-      </body></html>
-    `);
-    win.document.close();
-    win.focus();
-    win.print();
-  };
-
-  const resendEmail = async (orderId) => {
-    try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:3001/api/admin/orders/${orderId}/resend-confirmation`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        alert('Confirmation email resent');
-      } else {
-        alert('Resend not available yet on server');
-      }
-    } catch (e) {
-      alert('Resend failed');
-    }
-  };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this order?')) return;
@@ -290,37 +195,51 @@ const OrdersReports = () => {
       <div className="orders-filter-section">
         <div className="filter-row">
           <div className="filter-group">
+            <label htmlFor="order-id-filter" style={{ display: 'none' }}>Order ID Filter</label>
             <input
+              id="order-id-filter"
+              name="orderId"
               type="text"
               placeholder="Order ID"
               value={filters.orderId}
               onChange={(e) => handleFilterChange('orderId', e.target.value)}
+              title="Filter by Order ID"
             />
           </div>
           <div className="filter-group">
+            <label htmlFor="customer-name-filter" style={{ display: 'none' }}>Customer Name Filter</label>
             <input
+              id="customer-name-filter"
+              name="customerName"
               type="text"
               placeholder="Customer Name"
               value={filters.customerName}
               onChange={(e) => handleFilterChange('customerName', e.target.value)}
+              title="Filter by Customer Name"
             />
           </div>
         </div>
         <div className="filter-row">
           <div className="filter-date-group">
-            <label>START DATE</label>
+            <label htmlFor="start-date-filter">START DATE</label>
             <input
+              id="start-date-filter"
+              name="startDate"
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              title="Select start date for filter"
             />
           </div>
           <div className="filter-date-group">
-            <label>END DATE</label>
+            <label htmlFor="end-date-filter">END DATE</label>
             <input
+              id="end-date-filter"
+              name="endDate"
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              title="Select end date for filter"
             />
           </div>
           <button onClick={applyFilters} className="apply-filters-btn">Apply Filters</button>
@@ -392,37 +311,91 @@ const OrdersReports = () => {
                       padding: '4px 8px', 
                       borderRadius: '4px',
                       backgroundColor: order.status === 'completed' ? '#d1fae5' : 
+                                       order.status === 'preparing' ? '#fef3c7' : 
+                                       order.status === 'on_the_way' ? '#dbeafe' : 
+                                       order.status === 'delivered' ? '#cffafe' :
                                        order.status === 'pending' ? '#fef3c7' : 
-                                       order.status === 'processing' ? '#dbeafe' : 
-                                       order.status === 'out_for_delivery' ? '#cffafe' : '#fee2e2',
+                                       order.status === 'processing' ? '#dbeafe' : '#fee2e2',
                       color: order.status === 'completed' ? '#065f46' : 
+                             order.status === 'preparing' ? '#92400e' : 
+                             order.status === 'on_the_way' ? '#1e3a8a' : 
+                             order.status === 'delivered' ? '#155e75' :
                              order.status === 'pending' ? '#92400e' : 
-                             order.status === 'processing' ? '#1e3a8a' : 
-                             order.status === 'out_for_delivery' ? '#155e75' : '#991b1b',
+                             order.status === 'processing' ? '#1e3a8a' : '#991b1b',
                       fontSize: '0.85rem',
                       textTransform: 'capitalize'
                     }}>
-                      {order.status}
+                      {order.status.replace('_', ' ')}
                     </span>
                   </td>
                   <td>
-                    <div className={`order-actions ${isSlaBreached(order) ? 'sla-breached' : ''}`}>
+                    <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
                       {order.status === 'pending' && (
-                        <button onClick={() => markProcessing(order.id)} className="edit-btn">Start Processing</button>
+                        <button 
+                          onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                          className="edit-btn"
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          Start Preparing
+                        </button>
                       )}
-                      {order.status === 'processing' && (
-                        <button onClick={() => markOutForDelivery(order.id)} className="edit-btn">Out for delivery</button>
+                      {order.status === 'preparing' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(order.id, 'on_the_way')}
+                          className="edit-btn"
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          Mark On the Way
+                        </button>
                       )}
-                      {order.status === 'out_for_delivery' && (
-                        <button onClick={() => markCompleted(order.id)} className="add-btn">Mark Completed</button>
+                      {order.status === 'on_the_way' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(order.id, 'delivered')}
+                          className="add-btn"
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          Mark Delivered
+                        </button>
                       )}
-                      {order.status !== 'cancelled' && order.status !== 'completed' && (
-                        <button onClick={() => openCancelModal(order.id)} className="delete-btn">Cancel</button>
+                      {order.status === 'delivered' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(order.id, 'completed')}
+                          className="add-btn"
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          Complete Order
+                        </button>
                       )}
-                      <button onClick={() => printInvoice(order)} className="add-btn" style={{ background: '#374151' }}>Print Invoice</button>
-                      {order.customerEmail && (
-                        <button onClick={() => resendEmail(order.id)} className="edit-btn">Resend Email</button>
+                      {order.receiptImage && (
+                        <button
+                          onClick={() => {
+                            const imageUrl = `http://localhost:3001${order.receiptImage}`;
+                            setReceiptModal({ open: true, imageUrl, loading: true, error: null });
+                          }}
+                          className="edit-btn"
+                          style={{ fontSize: '0.85rem', width: '100%' }}
+                        >
+                          View Receipt
+                        </button>
                       )}
+                      {order.trackingToken && (
+                        <a
+                          href={`/track/${order.trackingToken}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="edit-btn"
+                          style={{ fontSize: '0.85rem', textAlign: 'center', textDecoration: 'none' }}
+                        >
+                          View Tracking
+                        </a>
+                      )}
+                      <button 
+                        onClick={() => handleDelete(order.id)} 
+                        className="delete-btn"
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -440,8 +413,7 @@ const OrdersReports = () => {
                   <span className={`mobile-card-status ${
                     order.status === 'completed' ? 'completed' : 
                     order.status === 'pending' ? 'pending' : 
-                    order.status === 'processing' ? 'processing' : 
-                    order.status === 'out_for_delivery' ? 'out_for_delivery' : 'cancelled'
+                    order.status === 'processing' ? 'processing' : 'cancelled'
                   }`}>
                     {order.status}
                   </span>
@@ -486,24 +458,74 @@ const OrdersReports = () => {
                     </span>
                   </div>
                 </div>
-              <div className={`mobile-card-actions ${isSlaBreached(order) ? 'sla-breached' : ''}`}>
-                {order.status === 'pending' && (
-                  <button onClick={() => markProcessing(order.id)} className="edit-btn">Start</button>
-                )}
-                {order.status === 'processing' && (
-                  <button onClick={() => markOutForDelivery(order.id)} className="edit-btn">Out</button>
-                )}
-                {order.status === 'out_for_delivery' && (
-                  <button onClick={() => markCompleted(order.id)} className="add-btn">Complete</button>
-                )}
-                {order.status !== 'cancelled' && order.status !== 'completed' && (
-                  <button onClick={() => openCancelModal(order.id)} className="delete-btn">Cancel</button>
-                )}
-                <button onClick={() => printInvoice(order)} className="add-btn" style={{ background: '#374151' }}>Invoice</button>
-                {order.customerEmail && (
-                  <button onClick={() => resendEmail(order.id)} className="edit-btn">Resend</button>
-                )}
-              </div>
+                <div className="mobile-card-actions">
+                  {order.status === 'pending' && (
+                    <button
+                      onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                      className="edit-btn"
+                      style={{ fontSize: '0.85rem' }}
+                    >
+                      Start Preparing
+                    </button>
+                  )}
+                  {order.status === 'preparing' && (
+                    <button
+                      onClick={() => handleUpdateStatus(order.id, 'on_the_way')}
+                      className="edit-btn"
+                      style={{ fontSize: '0.85rem' }}
+                    >
+                      Mark On the Way
+                    </button>
+                  )}
+                  {order.status === 'on_the_way' && (
+                    <button
+                      onClick={() => handleUpdateStatus(order.id, 'delivered')}
+                      className="edit-btn"
+                      style={{ fontSize: '0.85rem' }}
+                    >
+                      Mark Delivered
+                    </button>
+                  )}
+                  {order.status === 'delivered' && (
+                    <button
+                      onClick={() => handleUpdateStatus(order.id, 'completed')}
+                      className="edit-btn"
+                      style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: 'white', fontSize: '0.85rem' }}
+                    >
+                      Complete Order
+                    </button>
+                  )}
+                  {order.receiptImage && (
+                    <button
+                      onClick={() => {
+                        const imageUrl = `http://localhost:3001${order.receiptImage}`;
+                        setReceiptModal({ open: true, imageUrl, loading: true, error: null });
+                      }}
+                      className="edit-btn"
+                      style={{ fontSize: '0.85rem' }}
+                    >
+                      View Receipt
+                    </button>
+                  )}
+                  {order.trackingToken && (
+                    <a
+                      href={`/track/${order.trackingToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="edit-btn"
+                      style={{ fontSize: '0.85rem', textAlign: 'center', textDecoration: 'none', display: 'block' }}
+                    >
+                      View Tracking
+                    </a>
+                  )}
+                  <button
+                    onClick={() => handleDelete(order.id)}
+                    className="delete-btn"
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -528,46 +550,66 @@ const OrdersReports = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Add New Order</h2>
             <form onSubmit={handleSubmit}>
+              <label htmlFor="modal-customer-name">Customer Name</label>
               <input
+                id="modal-customer-name"
+                name="customerName"
                 type="text"
                 placeholder="Customer Name"
                 value={formData.customerName}
                 onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
                 required
+                title="Enter customer name"
               />
+              <label htmlFor="modal-customer-email">Email</label>
               <input
+                id="modal-customer-email"
+                name="customerEmail"
                 type="email"
                 placeholder="Email"
                 value={formData.customerEmail}
                 onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                title="Enter customer email"
               />
+              <label htmlFor="modal-customer-phone">Phone</label>
               <input
+                id="modal-customer-phone"
+                name="customerPhone"
                 type="tel"
                 placeholder="Phone"
                 value={formData.customerPhone}
                 onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                title="Enter customer phone"
               />
               
               <button type="button" onClick={handleAddItem}>Add Product</button>
               
               {formData.items.map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                  <label htmlFor={`product-select-${i}`} style={{ display: 'none' }}>Product {i + 1}</label>
                   <select
+                    id={`product-select-${i}`}
+                    name={`productId-${i}`}
                     value={item.productId}
                     onChange={(e) => handleItemChange(i, 'productId', e.target.value)}
                     required
+                    title={`Select product for item ${i + 1}`}
                   >
                     <option value="">Select Product</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
+                  <label htmlFor={`quantity-input-${i}`} style={{ display: 'none' }}>Quantity {i + 1}</label>
                   <input
+                    id={`quantity-input-${i}`}
+                    name={`quantity-${i}`}
                     type="number"
                     min="1"
                     value={item.quantity}
                     onChange={(e) => handleItemChange(i, 'quantity', parseInt(e.target.value))}
                     required
+                    title={`Enter quantity for item ${i + 1}`}
                   />
                 </div>
               ))}
@@ -579,29 +621,77 @@ const OrdersReports = () => {
         </div>
       )}
 
-  {cancelModal.open && (
-    <div className="modal" onClick={() => setCancelModal({ open: false, orderId: null, reason: '' })}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h2>Cancel Order</h2>
-        <div className="admin-form">
-          <div className="form-group">
-            <label className="form-label">Reason</label>
-            <select value={cancelModal.reason} onChange={(e) => setCancelModal({ ...cancelModal, reason: e.target.value })}>
-              <option value="">Select a reason</option>
-              <option value="customer_request">Customer request</option>
-              <option value="payment_issue">Payment issue</option>
-              <option value="inventory_shortage">Inventory shortage</option>
-              <option value="other">Other</option>
-            </select>
+      {/* Receipt View Modal */}
+      {receiptModal.open && receiptModal.imageUrl && (
+        <div className="modal" onClick={() => setReceiptModal({ open: false, imageUrl: null, loading: false, error: null })}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0 }}>Downpayment Receipt</h2>
+              <button
+                onClick={() => setReceiptModal({ open: false, imageUrl: null, loading: false, error: null })}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666'
+                }}
+                aria-label="Close receipt modal"
+              >
+                ×
+              </button>
+            </div>
+            {receiptModal.loading && !receiptModal.error && (
+              <div style={{ padding: '40px', color: '#ffd700' }}>
+                <p style={{ fontSize: '18px' }}>Loading receipt image...</p>
+              </div>
+            )}
+            {receiptModal.error && (
+              <div style={{ padding: '40px', color: '#fca5a5' }}>
+                <p style={{ fontSize: '18px', marginBottom: '10px' }}>❌ Failed to load receipt image</p>
+                <p style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>URL: {receiptModal.imageUrl}</p>
+                <p style={{ fontSize: '12px', color: '#999', marginTop: '10px' }}>Please check if the file exists on the server.</p>
+              </div>
+            )}
+            {!receiptModal.error && (
+              <img
+                src={receiptModal.imageUrl}
+                alt="Receipt"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '70vh',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                  display: receiptModal.loading ? 'none' : 'block'
+                }}
+                onLoad={() => {
+                  setReceiptModal(prev => ({ ...prev, loading: false, error: null }));
+                }}
+                onError={() => {
+                  setReceiptModal(prev => ({ ...prev, loading: false, error: 'Failed to load image' }));
+                }}
+              />
+            )}
+            <div style={{ marginTop: '20px' }}>
+              <button
+                onClick={() => {
+                  window.open(receiptModal.imageUrl, '_blank');
+                }}
+                className="add-btn"
+                style={{ marginRight: '10px' }}
+              >
+                Open in New Tab
+              </button>
+              <button
+                onClick={() => setReceiptModal({ open: false, imageUrl: null, loading: false, error: null })}
+                className="delete-btn"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
-        <div className="modal-buttons form-actions">
-          <button type="button" onClick={() => setCancelModal({ open: false, orderId: null, reason: '' })}>Close</button>
-          <button type="button" onClick={submitCancellation} disabled={!cancelModal.reason}>Confirm Cancel</button>
-        </div>
-      </div>
-    </div>
-  )}
+      )}
     </div>
   );
 };

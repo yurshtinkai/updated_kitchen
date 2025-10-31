@@ -12,6 +12,8 @@ class Order extends Model {
   public totalAmount!: number;
   public status!: string;
   public orderDate!: Date;
+  public receiptImage?: string;
+  public trackingToken?: string;
   public createdAt!: Date;
   public updatedAt!: Date;
   public Items?: OrderItem[];
@@ -49,12 +51,21 @@ Order.init(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('pending', 'processing', 'out_for_delivery', 'completed', 'cancelled'),
+      type: DataTypes.ENUM('pending', 'preparing', 'on_the_way', 'delivered', 'completed', 'cancelled'),
       defaultValue: 'pending',
     },
     orderDate: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+    },
+    receiptImage: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    trackingToken: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      unique: true,
     },
   },
   {

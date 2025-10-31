@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Homepage from './components/Homepage';
 import MenuWithCart from './components/MenuWithCart';
 import AboutPage from './components/AboutPage';
+import OrderTracking from './components/OrderTracking';
 import AdminSignin from './components/admin/AdminSignin';
 import AdminLayout from './components/admin/AdminLayout';
 import SalesReports from './components/admin/SalesReports';
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<Homepage />} />
           <Route path="/menu" element={<MenuWithCart />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/track/:token" element={<OrderTracking />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/signin" replace />} />

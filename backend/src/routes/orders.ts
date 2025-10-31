@@ -213,21 +213,5 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
-// Resend order confirmation email (stub)
-router.post('/:id/resend-confirmation', async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const order = await Order.findByPk(req.params.id);
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
-    // TODO: integrate with email service provider
-    console.log(`Resend confirmation requested for order #${order.id}`);
-    return res.json({ message: 'Confirmation email resent (stub)' });
-  } catch (error) {
-    console.error('Resend confirmation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 export default router;
 
