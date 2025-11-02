@@ -22,11 +22,25 @@ const OrdersReports = () => {
   });
   const [products, setProducts] = useState([]);
   const [receiptModal, setReceiptModal] = useState({ open: false, imageUrl: null, loading: false, error: null });
+  const [confirmModal, setConfirmModal] = useState({ open: false, orderId: null, orderNumber: null });
+  const [startPreparingModal, setStartPreparingModal] = useState({ open: false, orderId: null, orderNumber: null });
+  const [deleteModal, setDeleteModal] = useState({ open: false, orderId: null, orderNumber: null });
+  const [confirmedOrders, setConfirmedOrders] = useState(() => {
+    // Load confirmed orders from localStorage on mount
+    const saved = localStorage.getItem('confirmedOrders');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  const [notification, setNotification] = useState({ open: false, type: 'success', message: '' });
 
   useEffect(() => {
     fetchOrders();
     fetchProducts();
   }, [page]);
+
+  // Persist confirmed orders to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('confirmedOrders', JSON.stringify(Array.from(confirmedOrders)));
+  }, [confirmedOrders]);
 
   const fetchProducts = async () => {
     try {
@@ -73,6 +87,18 @@ const OrdersReports = () => {
       const result = await response.json();
       setOrders(result.orders);
       setPagination(result.pagination);
+      
+      // Clean up confirmed orders that are no longer pending
+      setConfirmedOrders(prev => {
+        const newSet = new Set(prev);
+        result.orders.forEach(order => {
+          // Remove from confirmed set if order is no longer pending
+          if (order.status !== 'pending' && newSet.has(order.id)) {
+            newSet.delete(order.id);
+          }
+        });
+        return newSet;
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -89,7 +115,66 @@ const OrdersReports = () => {
     fetchOrders();
   };
 
-  const handleUpdateStatus = async (orderId, newStatus) => {
+  const handleConfirmOrder = (orderId, orderNumber) => {
+    setConfirmModal({ open: true, orderId, orderNumber });
+  };
+
+  const handleConfirmAndProceed = async () => {
+    if (!confirmModal.orderId) return;
+    
+    try {
+      // Just mark as confirmed in local state, don't change status yet
+      setConfirmedOrders(prev => new Set([...prev, confirmModal.orderId]));
+      setConfirmModal({ open: false, orderId: null, orderNumber: null });
+      showNotification('success', `Order #${confirmModal.orderNumber} has been confirmed successfully. Click "Start Preparing" to begin the preparation process.`);
+    } catch (err) {
+      showNotification('error', 'Error confirming order');
+    }
+  };
+
+  const handleStartPreparing = (orderId, orderNumber) => {
+    setStartPreparingModal({ open: true, orderId, orderNumber });
+  };
+
+  const handleStartPreparingConfirm = async () => {
+    if (!startPreparingModal.orderId) return;
+    
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:3001/api/admin/orders/${startPreparingModal.orderId}`, {
+        method: 'PUT',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'preparing' })
+      });
+
+      if (response.ok) {
+        setConfirmedOrders(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(startPreparingModal.orderId);
+          return newSet;
+        });
+        setStartPreparingModal({ open: false, orderId: null, orderNumber: null });
+        showNotification('success', `Order #${startPreparingModal.orderNumber} is now being prepared. The customer will see this update on their tracking page.`);
+        fetchOrders();
+      } else {
+        showNotification('error', 'Failed to start preparation process');
+      }
+    } catch (err) {
+      showNotification('error', 'Error starting preparation process');
+    }
+  };
+
+  const showNotification = (type, message) => {
+    setNotification({ open: true, type, message });
+    setTimeout(() => {
+      setNotification({ open: false, type: 'success', message: '' });
+    }, 5000);
+  };
+
+  const handleUpdateStatus = async (orderId, newStatus, orderNumber = null) => {
     try {
       const token = localStorage.getItem('adminToken');
       const response = await fetch(`http://localhost:3001/api/admin/orders/${orderId}`, {
@@ -102,34 +187,45 @@ const OrdersReports = () => {
       });
 
       if (response.ok) {
-        alert(`Order marked as ${newStatus}!`);
+        const statusLabels = {
+          'on_the_way': 'out for delivery',
+          'delivered': 'delivered',
+          'completed': 'completed'
+        };
+        const label = statusLabels[newStatus] || newStatus;
+        showNotification('success', `Order #${orderNumber || orderId} has been marked as ${label}.`);
         fetchOrders();
       } else {
-        alert('Failed to update order status');
+        showNotification('error', 'Failed to update order status');
       }
     } catch (err) {
-      alert('Error updating order status');
+      showNotification('error', 'Error updating order status');
     }
   };
 
+  const handleDeleteClick = (orderId, orderNumber) => {
+    setDeleteModal({ open: true, orderId, orderNumber });
+  };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this order?')) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.orderId) return;
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:3001/api/admin/orders/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/admin/orders/${deleteModal.orderId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
+        setDeleteModal({ open: false, orderId: null, orderNumber: null });
+        showNotification('success', `Order #${deleteModal.orderNumber} has been deleted successfully.`);
         fetchOrders();
       } else {
-        alert('Failed to delete order');
+        showNotification('error', 'Failed to delete order');
       }
     } catch (err) {
-      alert('Error deleting order');
+      showNotification('error', 'Error deleting order');
     }
   };
 
@@ -150,7 +246,7 @@ const OrdersReports = () => {
     e.preventDefault();
     
     if (formData.items.some(item => !item.productId || item.quantity <= 0)) {
-      alert('Please fill in all product selections and valid quantities');
+      showNotification('error', 'Please fill in all product selections and valid quantities');
       return;
     }
 
@@ -167,6 +263,7 @@ const OrdersReports = () => {
 
       if (response.ok) {
         setShowModal(false);
+        showNotification('success', 'Order created successfully!');
         fetchOrders();
         setFormData({
           customerName: '',
@@ -176,10 +273,10 @@ const OrdersReports = () => {
         });
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create order');
+        showNotification('error', error.error || 'Failed to create order');
       }
     } catch (err) {
-      alert('Error creating order: ' + err.message);
+      showNotification('error', 'Error creating order: ' + err.message);
     }
   };
 
@@ -330,40 +427,44 @@ const OrdersReports = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-                      {order.status === 'pending' && (
+                      {order.status === 'pending' && !confirmedOrders.has(order.id) && (
                         <button 
-                          onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                          onClick={() => handleConfirmOrder(order.id, order.id)}
                           className="edit-btn"
-                          style={{ fontSize: '0.85rem' }}
                         >
-                          Start Preparing
+                          ✓ Confirm Order
+                        </button>
+                      )}
+                      {order.status === 'pending' && confirmedOrders.has(order.id) && (
+                        <button 
+                          onClick={() => handleStartPreparing(order.id, order.id)}
+                          className="edit-btn order-action-btn-start-preparing"
+                        >
+                          👨‍🍳 Start Preparing
                         </button>
                       )}
                       {order.status === 'preparing' && (
                         <button 
-                          onClick={() => handleUpdateStatus(order.id, 'on_the_way')}
+                          onClick={() => handleUpdateStatus(order.id, 'on_the_way', order.id)}
                           className="edit-btn"
-                          style={{ fontSize: '0.85rem' }}
                         >
-                          Mark On the Way
+                          🚗 Mark On the Way
                         </button>
                       )}
                       {order.status === 'on_the_way' && (
                         <button 
-                          onClick={() => handleUpdateStatus(order.id, 'delivered')}
+                          onClick={() => handleUpdateStatus(order.id, 'delivered', order.id)}
                           className="add-btn"
-                          style={{ fontSize: '0.85rem' }}
                         >
-                          Mark Delivered
+                          📦 Mark Delivered
                         </button>
                       )}
                       {order.status === 'delivered' && (
                         <button 
-                          onClick={() => handleUpdateStatus(order.id, 'completed')}
+                          onClick={() => handleUpdateStatus(order.id, 'completed', order.id)}
                           className="add-btn"
-                          style={{ fontSize: '0.85rem' }}
                         >
-                          Complete Order
+                          ✅ Complete Order
                         </button>
                       )}
                       {order.receiptImage && (
@@ -373,9 +474,8 @@ const OrdersReports = () => {
                             setReceiptModal({ open: true, imageUrl, loading: true, error: null });
                           }}
                           className="edit-btn"
-                          style={{ fontSize: '0.85rem', width: '100%' }}
                         >
-                          View Receipt
+                          🧾 View Receipt
                         </button>
                       )}
                       {order.trackingToken && (
@@ -384,17 +484,15 @@ const OrdersReports = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="edit-btn"
-                          style={{ fontSize: '0.85rem', textAlign: 'center', textDecoration: 'none' }}
                         >
-                          View Tracking
+                          🔍 View Tracking
                         </a>
                       )}
                       <button 
-                        onClick={() => handleDelete(order.id)} 
+                        onClick={() => handleDeleteClick(order.id, order.id)} 
                         className="delete-btn"
-                        style={{ fontSize: '0.85rem' }}
                       >
-                        Delete
+                        🗑️ Delete
                       </button>
                     </div>
                   </td>
@@ -459,40 +557,44 @@ const OrdersReports = () => {
                   </div>
                 </div>
                 <div className="mobile-card-actions">
-                  {order.status === 'pending' && (
+                  {order.status === 'pending' && !confirmedOrders.has(order.id) && (
                     <button
-                      onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                      onClick={() => handleConfirmOrder(order.id, order.id)}
                       className="edit-btn"
-                      style={{ fontSize: '0.85rem' }}
                     >
-                      Start Preparing
+                      ✓ Confirm Order
+                    </button>
+                  )}
+                  {order.status === 'pending' && confirmedOrders.has(order.id) && (
+                    <button
+                      onClick={() => handleStartPreparing(order.id, order.id)}
+                      className="edit-btn order-action-btn-start-preparing"
+                    >
+                      👨‍🍳 Start Preparing
                     </button>
                   )}
                   {order.status === 'preparing' && (
                     <button
-                      onClick={() => handleUpdateStatus(order.id, 'on_the_way')}
+                      onClick={() => handleUpdateStatus(order.id, 'on_the_way', order.id)}
                       className="edit-btn"
-                      style={{ fontSize: '0.85rem' }}
                     >
-                      Mark On the Way
+                      🚗 Mark On the Way
                     </button>
                   )}
                   {order.status === 'on_the_way' && (
                     <button
-                      onClick={() => handleUpdateStatus(order.id, 'delivered')}
+                      onClick={() => handleUpdateStatus(order.id, 'delivered', order.id)}
                       className="edit-btn"
-                      style={{ fontSize: '0.85rem' }}
                     >
-                      Mark Delivered
+                      📦 Mark Delivered
                     </button>
                   )}
                   {order.status === 'delivered' && (
                     <button
-                      onClick={() => handleUpdateStatus(order.id, 'completed')}
-                      className="edit-btn"
-                      style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: 'white', fontSize: '0.85rem' }}
+                      onClick={() => handleUpdateStatus(order.id, 'completed', order.id)}
+                      className="edit-btn order-action-btn-complete"
                     >
-                      Complete Order
+                      ✅ Complete Order
                     </button>
                   )}
                   {order.receiptImage && (
@@ -502,9 +604,8 @@ const OrdersReports = () => {
                         setReceiptModal({ open: true, imageUrl, loading: true, error: null });
                       }}
                       className="edit-btn"
-                      style={{ fontSize: '0.85rem' }}
                     >
-                      View Receipt
+                      🧾 View Receipt
                     </button>
                   )}
                   {order.trackingToken && (
@@ -513,17 +614,15 @@ const OrdersReports = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="edit-btn"
-                      style={{ fontSize: '0.85rem', textAlign: 'center', textDecoration: 'none', display: 'block' }}
                     >
-                      View Tracking
+                      🔍 View Tracking
                     </a>
                   )}
                   <button
-                    onClick={() => handleDelete(order.id)}
+                    onClick={() => handleDeleteClick(order.id, order.id)}
                     className="delete-btn"
-                    style={{ fontSize: '0.85rem' }}
                   >
-                    Delete
+                    🗑️ Delete
                   </button>
                 </div>
               </div>
@@ -715,6 +814,202 @@ const OrdersReports = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal.open && (
+        <div 
+          className="modal confirm-modal-overlay" 
+          onClick={() => setConfirmModal({ open: false, orderId: null, orderNumber: null })}
+        >
+          <div className="confirm-modal-content" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="confirm-modal-header">
+              <div className="confirm-modal-icon">⚠️</div>
+              <h2 className="confirm-modal-title">Confirm Order</h2>
+              <button
+                className="confirm-modal-close"
+                onClick={() => setConfirmModal({ open: false, orderId: null, orderNumber: null })}
+                aria-label="Close confirmation modal"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="confirm-modal-body">
+              <p className="confirm-modal-message">
+                Are you sure you want to confirm order #{confirmModal.orderNumber}?
+              </p>
+              <p className="confirm-modal-submessage">
+                This will confirm the order. After confirmation, you will need to click "Start Preparing" to begin the preparation process and update the customer's tracking page.
+              </p>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="confirm-modal-footer">
+              <button
+                className="confirm-btn confirm-btn-primary"
+                onClick={handleConfirmAndProceed}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Confirm
+              </button>
+              <button
+                className="confirm-btn confirm-btn-secondary"
+                onClick={() => setConfirmModal({ open: false, orderId: null, orderNumber: null })}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Start Preparing Modal */}
+      {startPreparingModal.open && (
+        <div 
+          className="modal confirm-modal-overlay" 
+          onClick={() => setStartPreparingModal({ open: false, orderId: null, orderNumber: null })}
+        >
+          <div className="confirm-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-modal-header">
+              <div className="confirm-modal-icon">👨‍🍳</div>
+              <h2 className="confirm-modal-title">Start Preparing</h2>
+              <button
+                className="confirm-modal-close"
+                onClick={() => setStartPreparingModal({ open: false, orderId: null, orderNumber: null })}
+                aria-label="Close start preparing modal"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div className="confirm-modal-body">
+              <p className="confirm-modal-message">
+                Are you ready to start preparing order #{startPreparingModal.orderNumber}?
+              </p>
+              <p className="confirm-modal-submessage">
+                This will change the order status to "Preparing" and notify the customer on their tracking page that preparation has begun.
+              </p>
+            </div>
+
+            <div className="confirm-modal-footer">
+              <button
+                className="confirm-btn confirm-btn-primary"
+                onClick={handleStartPreparingConfirm}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Start Preparing
+              </button>
+              <button
+                className="confirm-btn confirm-btn-secondary"
+                onClick={() => setStartPreparingModal({ open: false, orderId: null, orderNumber: null })}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.open && (
+        <div 
+          className="modal confirm-modal-overlay" 
+          onClick={() => setDeleteModal({ open: false, orderId: null, orderNumber: null })}
+        >
+          <div className="confirm-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-modal-header">
+              <div className="confirm-modal-icon" style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}>🗑️</div>
+              <h2 className="confirm-modal-title">Delete Order</h2>
+              <button
+                className="confirm-modal-close"
+                onClick={() => setDeleteModal({ open: false, orderId: null, orderNumber: null })}
+                aria-label="Close delete modal"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div className="confirm-modal-body">
+              <p className="confirm-modal-message">
+                Are you sure you want to delete order #{deleteModal.orderNumber}?
+              </p>
+              <p className="confirm-modal-submessage" style={{ color: '#fca5a5' }}>
+                This action cannot be undone. All order data will be permanently deleted.
+              </p>
+            </div>
+
+            <div className="confirm-modal-footer">
+              <button
+                className="confirm-btn"
+                onClick={handleDeleteConfirm}
+                style={{ 
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  color: 'white',
+                  boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)'
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Delete Order
+              </button>
+              <button
+                className="confirm-btn confirm-btn-secondary"
+                onClick={() => setDeleteModal({ open: false, orderId: null, orderNumber: null })}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Toast */}
+      {notification.open && (
+        <div className={`notification-toast notification-${notification.type}`}>
+          <div className="notification-icon">
+            {notification.type === 'success' ? '✅' : '❌'}
+          </div>
+          <div className="notification-message">{notification.message}</div>
+          <button
+            className="notification-close"
+            onClick={() => setNotification({ open: false, type: 'success', message: '' })}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
       )}
     </div>
