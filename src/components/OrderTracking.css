@@ -146,17 +146,20 @@
   }
 }
 
-/* Status Timeline */
-.status-timeline {
+/* Modern Professional Timeline */
+.status-timeline-modern {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 48px;
   position: relative;
-  padding: 20px 0;
+  padding: 40px 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.timeline-step {
+.timeline-step-modern {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -165,43 +168,69 @@
   z-index: 2;
 }
 
-.step-icon {
-  width: 90px;
-  height: 90px;
+.step-node {
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 4px solid #e5e7eb;
   position: relative;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+  font-size: 14px;
 }
 
-.timeline-step.active .step-icon {
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  border-color: #ffd700;
+/* Completed Step - Purple with Checkmark */
+.timeline-step-modern.completed .step-node {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border: 3px solid #8b5cf6;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.checkmark-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Current Step - Animated Purple */
+.timeline-step-modern.current .step-node {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border: 3px solid #8b5cf6;
   box-shadow: 
-    0 0 30px rgba(255, 215, 0, 0.5),
-    0 8px 25px rgba(255, 215, 0, 0.3);
-  transform: scale(1.15);
+    0 0 0 4px rgba(139, 92, 246, 0.2),
+    0 4px 20px rgba(139, 92, 246, 0.4);
+  animation: currentPulse 2s ease-in-out infinite;
 }
 
-.timeline-step.active .step-icon::before {
+@keyframes currentPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 0 0 4px rgba(139, 92, 246, 0.2),
+      0 4px 20px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 
+      0 0 0 6px rgba(139, 92, 246, 0.3),
+      0 6px 25px rgba(139, 92, 246, 0.5);
+  }
+}
+
+.timeline-step-modern.current .step-node::after {
   content: '';
   position: absolute;
-  inset: -4px;
+  inset: -8px;
   border-radius: 50%;
-  border: 2px solid #ffd700;
+  border: 2px solid rgba(139, 92, 246, 0.3);
   animation: ripple 2s ease-out infinite;
 }
 
 @keyframes ripple {
   0% {
-    transform: scale(1);
+    transform: scale(0.9);
     opacity: 1;
   }
   100% {
@@ -210,69 +239,54 @@
   }
 }
 
-.timeline-step.current .step-icon {
-  animation: pulseGlow 2s ease-in-out infinite;
+/* Pending Step - Light Grey */
+.timeline-step-modern.pending .step-node {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  color: #6b7280;
 }
 
-@keyframes pulseGlow {
-  0%, 100% { 
-    transform: scale(1.15); 
-    box-shadow: 
-      0 0 30px rgba(255, 215, 0, 0.5),
-      0 8px 25px rgba(255, 215, 0, 0.3);
-  }
-  50% { 
-    transform: scale(1.2); 
-    box-shadow: 
-      0 0 40px rgba(255, 215, 0, 0.7),
-      0 10px 30px rgba(255, 215, 0, 0.5);
-  }
-}
-
-.step-label {
-  font-size: 0.95rem;
+.step-number {
+  font-size: 14px;
   font-weight: 600;
-  color: #9ca3af;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.step-label-modern {
+  font-size: 13px;
+  font-weight: 600;
   text-align: center;
   transition: all 0.3s ease;
+  color: #6b7280;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
 }
 
-.timeline-step.active .step-label {
+.timeline-step-modern.completed .step-label-modern,
+.timeline-step-modern.current .step-label-modern {
   color: #1f2937;
   font-weight: 700;
-  transform: translateY(-2px);
 }
 
-.timeline-step.current .step-label {
-  color: #ffd700;
-  font-weight: 800;
-}
-
-.step-connector {
+.step-connector-modern {
   position: absolute;
-  top: 45px;
-  left: calc(50% + 45px);
-  width: calc(100% - 90px);
-  height: 4px;
-  background: linear-gradient(90deg, #e5e7eb 0%, #d1d5db 100%);
+  top: 28px;
+  left: calc(50% + 28px);
+  width: calc(100% - 56px);
+  height: 2px;
+  background: #e5e7eb;
   z-index: 1;
-  border-radius: 2px;
   transition: all 0.5s ease;
 }
 
-.step-connector.active {
-  background: linear-gradient(90deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
-  background-size: 200% 100%;
-  animation: connectorFlow 2s linear infinite;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+.step-connector-modern.active {
+  background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%);
+  height: 3px;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
 }
 
-@keyframes connectorFlow {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.timeline-step:last-child .step-connector {
+.timeline-step-modern:last-child .step-connector-modern {
   display: none;
 }
 
@@ -773,24 +787,31 @@
     border-radius: 20px;
   }
 
-  .status-timeline {
+  .status-timeline-modern {
+    padding: 30px 15px;
     flex-wrap: wrap;
-    gap: 24px;
-    padding: 10px 0;
+    gap: 20px;
   }
 
-  .timeline-step {
-    min-width: 120px;
-    flex: 0 0 calc(50% - 12px);
+  .timeline-step-modern {
+    min-width: 80px;
+    flex: 0 0 calc(50% - 10px);
   }
 
-  .step-icon {
-    width: 70px;
-    height: 70px;
-    font-size: 2rem;
+  .step-node {
+    width: 48px;
+    height: 48px;
   }
 
-  .step-connector {
+  .step-number {
+    font-size: 12px;
+  }
+
+  .step-label-modern {
+    font-size: 11px;
+  }
+
+  .step-connector-modern {
     display: none;
   }
 
@@ -862,9 +883,13 @@
     padding: 24px 16px;
   }
 
-  .timeline-step {
+  .timeline-step-modern {
     flex: 0 0 100%;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+  }
+
+  .step-connector-modern {
+    display: none;
   }
 
   .status-banner-content h3 {

@@ -33,10 +33,11 @@ const OrderTracking = () => {
 
   const getStatusSteps = () => {
     return [
-      { key: 'pending', label: 'Order Received', icon: '📋', active: ['pending', 'preparing', 'on_the_way', 'delivered', 'completed'].includes(order?.status) },
-      { key: 'preparing', label: 'Preparing', icon: '👨‍🍳', active: ['preparing', 'on_the_way', 'delivered', 'completed'].includes(order?.status) },
-      { key: 'on_the_way', label: 'On the Way', icon: '🚗', active: ['on_the_way', 'delivered', 'completed'].includes(order?.status) },
-      { key: 'delivered', label: 'Delivered', icon: '✅', active: ['delivered', 'completed'].includes(order?.status) },
+      { key: 'pending', label: 'Order Received', stepNumber: '01', active: ['pending', 'preparing', 'on_the_way', 'delivered', 'completed'].includes(order?.status) },
+      { key: 'preparing', label: 'Preparing', stepNumber: '02', active: ['preparing', 'on_the_way', 'delivered', 'completed'].includes(order?.status) },
+      { key: 'on_the_way', label: 'On the Way', stepNumber: '03', active: ['on_the_way', 'delivered', 'completed'].includes(order?.status) },
+      { key: 'delivered', label: 'Delivered', stepNumber: '04', active: ['delivered', 'completed'].includes(order?.status) },
+      { key: 'completed', label: 'Completed', stepNumber: '05', active: ['completed'].includes(order?.status) },
     ];
   };
 
@@ -87,23 +88,31 @@ const OrderTracking = () => {
       </div>
 
       <div className="tracking-card">
-        {/* Status Timeline */}
-        <div className="status-timeline">
-          {statusSteps.map((step, index) => (
-            <div key={step.key} className={`timeline-step ${step.active ? 'active' : ''} ${order.status === step.key ? 'current' : ''}`}>
-              <div className="step-icon">
-                {order.status === 'preparing' && step.key === 'preparing' ? (
-                  <div className="cooking-animation">👨‍🍳</div>
-                ) : (
-                  <span>{step.icon}</span>
+        {/* Modern Professional Timeline */}
+        <div className="status-timeline-modern">
+          {statusSteps.map((step, index) => {
+            const isCompleted = step.active && order.status !== step.key;
+            const isCurrent = order.status === step.key;
+            const isPending = !step.active;
+            
+            return (
+              <div key={step.key} className={`timeline-step-modern ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''} ${isPending ? 'pending' : ''}`}>
+                <div className="step-node">
+                  {isCompleted ? (
+                    <svg className="checkmark-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  ) : (
+                    <span className="step-number">{step.stepNumber}</span>
+                  )}
+                </div>
+                <div className="step-label-modern">{step.label}</div>
+                {index < statusSteps.length - 1 && (
+                  <div className={`step-connector-modern ${step.active ? 'active' : ''}`}></div>
                 )}
               </div>
-              <div className="step-label">{step.label}</div>
-              {index < statusSteps.length - 1 && (
-                <div className={`step-connector ${step.active ? 'active' : ''}`}></div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Current Status Message */}
